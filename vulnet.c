@@ -56,7 +56,7 @@ int authenticate( int sockfd, const char* id, const char* pw )
     const char* szWrongID = "Wrong ID given.\n";
     const char* szPass = "Password: ";
     const char* szWrongPW = "Wrong Password given.\n";
-    char buf[MAX_BUF];
+    char buf[MAX_BUF] = {'\0', };
 
     r = send( sockfd, szName, strlen( szName ), 0 );
     if ( r == -1 ) { perror( "send" ); return -1; }
