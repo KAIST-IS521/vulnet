@@ -45,7 +45,7 @@ int readSock( int sockfd, char* buf, size_t bufLen )
 
     r = recv( sockfd, buf, bufLen - 1, 0 );
     if ( r == -1 ) { perror( "recv" ); return -1; }
-    buf[r - 1] = '\0';
+    if ( r > 0 ) buf[r - 1] = '\0';
     return 0;
 }
 
