@@ -41,11 +41,18 @@ int portBind( const char* ip, int port )
 
 int readSock( int sockfd, char* buf, size_t bufLen )
 {
-    int r;
+    int r = 0;
+    char tmp;
 
-    r = recv( sockfd, buf, bufLen - 1, 0 );
-    if ( r == -1 ) { perror( "recv" ); return -1; }
+    while( r < bufLen ){
+      if( recv( sockfd, &tmp, 1, 0 ) == 1 ){
+        buf[r] = tmp;
+        r ++;
+        if( tmp == '\n' ) break;
+      } else { perror("recv"); return -1;}
+    }
     if ( r > 0 ) buf[r - 1] = '\0';
+
     return 0;
 }
 
