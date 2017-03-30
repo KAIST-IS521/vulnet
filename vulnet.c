@@ -44,12 +44,12 @@ int readSock( int sockfd, char* buf, size_t bufLen )
     int r = 0;
     char tmp;
 
-    while( r < bufLen ){
-      if( recv( sockfd, &tmp, 1, 0 ) == 1 ){
+    while( r < bufLen ) {
+      if ( recv( sockfd, &tmp, 1, 0 ) == 1 ) {
         buf[r] = tmp;
         r ++;
         if( tmp == '\n' ) break;
-      } else { perror("recv"); return -1;}
+      } else { perror("recv"); return -1; }
     }
     if ( r > 0 ) buf[r - 1] = '\0';
 
