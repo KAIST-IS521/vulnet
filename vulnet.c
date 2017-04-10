@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
@@ -91,19 +92,69 @@ int authenticate( int sockfd, const char* id, const char* pw )
     return 0;
 }
 
-void spawnShell( int sockfd )
+void spawnBash( int sockfd, int pipefd[2] )
 {
-    int status;
     char* const cmds[] = { "/bin/bash", NULL };
     pid_t pid = fork();
     if ( pid == -1 ) {
         perror( "fork" );
-    } else if ( pid == 0 ) { // child
-        dup2( sockfd, STDIN_FILENO );
+        return;
+    } else if ( pid == 0 ) {
+        dup2( pipefd[0], STDIN_FILENO );
         dup2( sockfd, STDOUT_FILENO );
         dup2( sockfd, STDERR_FILENO );
         execve( cmds[0], cmds, NULL );
     } else {
+        close( pipefd[0] );
+        close( pipefd[1] );
+    }
+}
+
+bool containsBadStr( const char* buf )
+{
+    if ( strstr( buf, "/proc" ) ) return true;
+    if ( strstr( buf, "cmdline" ) ) return true;
+    if ( strstr( buf, "`" ) ) return true;
+    if ( strstr( buf, "wget" ) ) return true;
+    if ( strstr( buf, "curl" ) ) return true;
+    return false;
+}
+
+void readAndFilter( int sockfd, int pipefd[2] )
+{
+    char buf[MAX_BUF];
+
+    close( pipefd[0] );
+
+    dup2( sockfd, STDIN_FILENO );
+    dup2( pipefd[1], STDOUT_FILENO );
+    close( pipefd[1] );
+
+    while ( fgets( buf, sizeof(buf), stdin ) ) {
+        if ( containsBadStr( buf ) ) continue;
+        fwrite( buf, strlen(buf), 1, stdout );
+        fflush( stdout );
+    }
+}
+
+void spawnShell( int sockfd )
+{
+    int status;
+    int pipefd[2];
+    pid_t pid;
+
+    if ( pipe( pipefd ) == -1 ) {
+        perror( "pipe" );
+        return;
+    }
+
+    pid = fork();
+    if ( pid == -1 ) {
+        perror( "fork" );
+    } else if ( pid == 0 ) {
+        readAndFilter( sockfd, pipefd );
+    } else {
+        spawnBash( sockfd, pipefd );
         waitpid( pid, &status, 0 );
     }
 }
